@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eine Gleichung für Emma</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+  /* Layout: ein Liebesbrief auf Millimeterpapier bei Nacht. Links Worte, rechts der Graph, darunter Aufgaben wie in einem Matheheft. */
+  :root {
+    color-scheme: dark;
+    --night: #170d1c;
+    --ink: #22132b;
+    --ink-2: #2c1936;
+    --line: rgba(245, 195, 204, 0.11);
+    --rose: #ef4f62;
+    --rose-soft: rgba(239, 79, 98, 0.22);
+    --blush: #f5c3cc;
+    --fg: #fbeff1;
+    --muted: #bfa3b2;
+    --gold: #f2c878;
+    --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --font-body: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --font-hand: "Caveat", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--night);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: -1px -1px;
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+
+  #sky, #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #sky { z-index: 0; }
+  #fx { z-index: 60; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+    padding-block: clamp(56px, 9vw, 104px) clamp(40px, 6vw, 72px);
+  }
+  .hero-text { min-width: 0; display: grid; gap: 20px; }
+  .eyebrow {
+    font-family: var(--font-hand);
+    font-size: 1.6rem;
+    color: var(--gold);
+    line-height: 1;
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 6.4vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .name {
+    display: inline-block;
+    font-style: italic;
+    font-weight: 600;
+    color: var(--rose);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-style: italic;
+    font-weight: 600;
+    transition: transform .25s cubic-bezier(.3, 1.6, .5, 1);
+  }
+  .name.bounce { transform: scale(1.12) rotate(-3deg); }
+  .lede { margin: 0; color: var(--blush); max-width: 34ch; font-size: 1.2rem; }
+
+  .moon {
+    position: absolute;
+    top: clamp(16px, 3vw, 32px);
+    right: 0;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: radial-gradient(circle at 35% 35%, #fff4d6, var(--gold) 70%);
+    box-shadow: 0 0 28px rgba(242, 200, 120, .45), inset -9px -4px 0 rgba(23, 13, 28, .55);
+    transition: transform .4s ease, box-shadow .4s ease;
+  }
+  .moon:hover { transform: rotate(-12deg) scale(1.06); box-shadow: 0 0 44px rgba(242, 200, 120, .7), inset -9px -4px 0 rgba(23, 13, 28, .55); }
+
+  .plot-card { min-width: 0; display: grid; gap: 0; }
+  .plot {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 32 / 29;
+    background: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+  }
+  .plot canvas {
+    display: block; width: 100%; height: 100%;
+    touch-action: pan-y;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    cursor: pointer;
+  }
+  .plot-hint {
+    position: absolute; right: 12px; bottom: 8px;
+    font-family: var(--font-hand); font-size: 1.15rem; color: var(--muted);
+    pointer-events: none;
+  }
+
+  /* Algebra-Ansicht wie in GeoGebra */
+  .algebra {
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-radius: 0 0 10px 10px;
+    background: var(--ink-2);
+  }
+  .algebra-row {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: clamp(1rem, 2.6vw, 1.22rem);
+    overflow-x: auto;
+  }
+  .algebra-row + .algebra-row { border-top: 1px solid var(--line); }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: rgba(239, 79, 98, .45); border: 2px solid var(--rose); }
+  .math { font-family: var(--font-body); white-space: nowrap; }
+  .math i { font-style: italic; }
+  .math sup { font-size: .62em; line-height: 0; }
+  .math .lbl { color: var(--muted); }
+  .sup-egg {
+    background: none; border: 0; padding: 0 1px; cursor: pointer; color: inherit;
+    font: inherit; line-height: 0;
+    border-bottom: 1px dotted transparent;
+    transition: color .3s;
+  }
+  .sup-egg:hover { border-bottom-color: var(--muted); }
+  .sup-egg.revealed { color: var(--rose); font-weight: 600; animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+  @keyframes pop { from { transform: scale(.4); } to { transform: scale(1); } }
+
+  /* ---------- Sektionen ---------- */
+  section.block { padding-block: clamp(48px, 8vw, 88px); border-top: 1px solid var(--line); }
+  .kicker {
+    font-family: var(--font-body); font-size: .8rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 10px;
+  }
+  h2 {
+    margin: 0 0 14px;
+    font-family: var(--font-display); font-weight: 400;
+    font-size: clamp(1.9rem, 4.4vw, 2.9rem); line-height: 1.1; letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .intro { margin: 0; color: var(--blush); max-width: 60ch; }
+
+  /* Regler */
+  .morph {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 56px);
+    align-items: center;
+    margin-top: 32px;
+  }
+  .morph-plot {
+    width: 100%; max-width: 100%; aspect-ratio: 32 / 30;
+    background: var(--ink); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }
+  .morph-plot canvas { display: block; width: 100%; height: 100%; }
+  .morph-side { min-width: 0; display: grid; gap: 18px; }
+  .morph-eq { font-size: clamp(1.15rem, 3vw, 1.5rem); overflow-x: auto; }
+  .kval { color: var(--gold); font-variant-numeric: tabular-nums; display: inline-block; min-width: 2.6em; text-align: center; font-style: normal; }
+  .slider-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+  .slider-row label { font-style: italic; font-size: 1.3rem; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--blush), var(--rose)); }
+  input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--blush), var(--rose)); }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 26px; height: 26px; margin-top: -11px; border: 0; border-radius: 50%;
+    background: var(--rose); box-shadow: 0 0 0 5px var(--rose-soft);
+  }
+  input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: var(--rose); box-shadow: 0 0 0 5px var(--rose-soft); }
+  .ticks { display: flex; justify-content: space-between; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; margin-top: -8px; padding-left: calc(1.3rem + 14px); }
+  .morph-caption { font-family: var(--font-hand); font-size: 1.7rem; line-height: 1.2; color: var(--fg); min-height: 2.6em; margin: 0; }
+
+  /* Sätze */
+  .theorems {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 32px;
+  }
+  .card {
+    position: relative; display: block; width: 100%; min-height: 220px;
+    background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
+    perspective: 1000px;
+  }
+  .card-inner {
+    position: relative; width: 100%; height: 100%; min-height: 220px;
+    transition: transform .7s cubic-bezier(.4, .2, .2, 1);
+    transform-style: preserve-3d;
+  }
+  .card[aria-pressed="true"] .card-inner { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 22px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
+  .front { background: var(--ink); }
+  .back { background: var(--ink-2); transform: rotateY(180deg); border-color: var(--rose-soft); }
+  .face .tag { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .face h3 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.25; }
+  .face p { margin: 0; color: var(--blush); }
+  .face .flip { margin-top: auto; font-family: var(--font-hand); font-size: 1.15rem; color: var(--muted); }
+  .back p { font-family: var(--font-hand); font-size: 1.45rem; line-height: 1.25; color: var(--fg); }
+  .back .qed { margin-top: auto; align-self: flex-end; color: var(--rose); font-size: 1.1rem; }
+
+  /* Bonusaufgabe */
+  .bonus { text-align: center; display: grid; justify-items: center; }
+  .bonus .intro { margin-inline: auto; }
+  .answer-area { position: relative; width: 100%; max-width: 560px; height: 220px; margin-top: 18px; }
+  .btn {
+    position: absolute; top: 50%;
+    border: 0; border-radius: 999px; cursor: pointer;
+    padding: 14px 34px; font-family: var(--font-display); font-size: 1.25rem;
+    transition: left .35s cubic-bezier(.3, 1.4, .5, 1), top .35s cubic-bezier(.3, 1.4, .5, 1), transform .2s ease, background .3s;
+    transform: translate(-50%, -50%);
+    touch-action: manipulation;
+  }
+  .btn-yes { left: 35%; background: var(--rose); color: #fff; box-shadow: 0 8px 28px rgba(239, 79, 98, .35); }
+  .btn-yes:hover { transform: translate(-50%, -50%) scale(1.06); }
+  .btn-no { left: 65%; background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--muted); }
+  .btn-no.converted { background: var(--rose); color: #fff; box-shadow: 0 8px 28px rgba(239, 79, 98, .35); }
+  .answer-result { font-family: var(--font-hand); font-size: 2.2rem; line-height: 1.2; color: var(--fg); margin: 0; }
+  .answer-result small { display: block; font-family: var(--font-body); font-size: 1rem; color: var(--blush); margin-top: 8px; }
+
+  /* Fußzeile */
+  footer.end {
+    border-top: 1px solid var(--line);
+    padding-block: 40px 120px;
+    display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: baseline;
+    color: var(--muted); font-size: 1rem;
+  }
+  footer .sig { font-family: var(--font-hand); font-size: 1.8rem; color: var(--fg); }
+
+  /* Geheimnis-Zähler */
+  .egg-pill {
+    position: fixed; z-index: 40;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px; cursor: pointer;
+    background: rgba(34, 19, 43, .92); border: 1px solid var(--line); color: var(--blush);
+    font-size: .95rem; font-variant-numeric: tabular-nums;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    transition: background .4s, color .4s, transform .3s;
+  }
+  .egg-pill .h { color: var(--rose); }
+  .egg-pill.done { background: var(--gold); color: var(--night); border-color: transparent; animation: wiggle 2.4s ease-in-out infinite; }
+  .egg-pill.done .h { color: var(--rose); }
+  .egg-pill.ping { transform: scale(1.15); }
+  @keyframes wiggle { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-6deg); } 90% { transform: rotate(6deg); } 95% { transform: rotate(-3deg); } }
+
+  .panel {
+    position: fixed; z-index: 45;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    width: min(360px, calc(100vw - 32px));
+    background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 18px 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  }
+  .panel h4 { margin: 0 0 4px; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+  .panel > p { margin: 0 0 12px; font-size: .95rem; color: var(--muted); }
+  .panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .panel li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: 1rem; line-height: 1.35; color: var(--muted); }
+  .panel li .mark { color: var(--line); }
+  .panel li.found { color: var(--fg); }
+  .panel li.found .mark { color: var(--rose); }
+  .letter-btn {
+    width: 100%; margin-top: 14px; padding: 12px; border: 0; border-radius: 8px; cursor: pointer;
+    background: var(--gold); color: var(--night); font-family: var(--font-display); font-weight: 600; font-size: 1.05rem;
+  }
+
+  .toast {
+    position: fixed; z-index: 55; left: 50%;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    width: min(440px, calc(100vw - 32px));
+    transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+    background: var(--ink-2); border: 1px solid var(--rose-soft); border-radius: 12px;
+    padding: 14px 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+    transition: opacity .35s ease, transform .35s ease;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; cursor: pointer; }
+  .toast .t-title { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .toast .t-msg { font-family: var(--font-hand); font-size: 1.5rem; line-height: 1.25; color: var(--fg); }
+
+  /* Brief */
+  .overlay {
+    position: fixed; inset: 0; z-index: 70;
+    display: grid; place-items: center;
+    padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+    background: rgba(12, 6, 15, .78);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    overflow-y: auto;
+  }
+  .letter {
+    position: relative; width: min(560px, 100%);
+    background: #fbeff1; color: #3a1f2c;
+    background-image: linear-gradient(rgba(239, 79, 98, .16) 1px, transparent 1px);
+    background-size: 100% 2.1rem; background-position: 0 1.55rem;
+    border-radius: 6px; padding: 34px clamp(22px, 5vw, 44px) 30px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+    animation: unfold .8s cubic-bezier(.2, .9, .3, 1);
+    transform-origin: top center;
+  }
+  @keyframes unfold { from { transform: perspective(900px) rotateX(-70deg) translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .letter p { margin: 0; font-family: var(--font-hand); font-size: 1.5rem; line-height: 2.1rem; }
+  .letter p + p { margin-top: 2.1rem; }
+  .letter .close {
+    position: absolute; top: 8px; right: 10px; width: 40px; height: 40px;
+    border: 0; background: none; cursor: pointer; color: #3a1f2c; font-size: 1.6rem; line-height: 1;
+  }
+
+  @media (max-width: 860px) {
+    .hero, .morph { grid-template-columns: minmax(0, 1fr); }
+    .theorems { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .moon { top: 18px; }
+  }
+  @media (max-width: 560px) {
+    .theorems { grid-template-columns: minmax(0, 1fr); }
+    .answer-area { height: 240px; }
+    .btn-yes { left: 30%; }
+    .btn-no { left: 70%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<div class="wrap">
+  <header class="hero">
+    <button class="moon" id="moon" type="button" aria-label="Der Mond"></button>
+    <div class="hero-text">
+      <div class="eyebrow" id="greet">Hallo, Emma</div>
+      <h1>Eine Gleichung für <button class="name" id="name" type="button">Emma</button></h1>
+      <p class="lede">Von allen Punkten (x, y) der Ebene erfüllen nur ganz bestimmte diese Gleichung. Zusammen ergeben sie ein Herz. Und dein Name steht mittendrin.</p>
+    </div>
+    <div class="plot-card">
+      <div class="plot">
+        <canvas id="heart" aria-label="Graph der Gleichung: ein Herz mit dem Namen Emma"></canvas>
+        <span class="plot-hint">berühr mich</span>
+      </div>
+      <div class="algebra">
+        <div class="algebra-row">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="math"><span class="lbl">eq1:</span> (<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup> − 1)<sup>3</sup> = <i>x</i><sup>2</sup> <i>y</i><sup><button class="sup-egg" id="three" type="button" aria-label="Hochzahl drei">3</button></sup></span>
+        </div>
+        <div class="algebra-row">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="math"><span class="lbl">text1</span> = Text(„Emma“, (0, 0.5))</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="block" aria-labelledby="h-morph">
+    <p class="kicker">Aufgabe 1 · Parameter</p>
+    <h2 id="h-morph">Was du verändert hast</h2>
+    <p class="intro">Schreib ein kleines <i>k</i> vor die rechte Seite, und die Gleichung erzählt unsere Geschichte. Bei <i>k</i> = 0 ist das hier nur ein Kreis. Schieb mal.</p>
+    <div class="morph">
+      <div class="morph-plot"><canvas id="morph" aria-label="Graph, der sich je nach k vom Kreis zum Herz verformt"></canvas></div>
+      <div class="morph-side">
+        <div class="math morph-eq">(<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup> − 1)<sup>3</sup> = <span class="kval" id="kval">0.00</span> · <i>x</i><sup>2</sup> <i>y</i><sup>3</sup></div>
+        <div>
+          <div class="slider-row">
+            <label for="k"><i>k</i></label>
+            <input type="range" id="k" min="0" max="3" step="0.01" value="0">
+          </div>
+          <div class="ticks" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span></div>
+        </div>
+        <p class="morph-caption" id="caption" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-theorems">
+    <p class="kicker">Aufgabe 2 · Beweise</p>
+    <h2 id="h-theorems">Sechs Sätze über dich</h2>
+    <p class="intro">Jeder Satz braucht einen Beweis. Tipp eine Karte an, um ihn zu sehen.</p>
+    <div class="theorems" id="theorems"></div>
+  </section>
+
+  <section class="block bonus" aria-labelledby="h-bonus">
+    <p class="kicker">Bonusaufgabe · 10 Punkte</p>
+    <h2 id="h-bonus">Löst du diese Gleichung mit mir, für immer?</h2>
+    <p class="intro">Bitte genau eine Antwort ankreuzen.</p>
+    <div class="answer-area" id="answer-area">
+      <button class="btn btn-yes" id="yes" type="button">Ja</button>
+      <button class="btn btn-no" id="no" type="button">Nein</button>
+    </div>
+    <p class="answer-result" id="answer-result" hidden>Gleichung gelöst. Für immer. ∎<small>Die Lösungsmenge ist {du, ich}. Keine weiteren Lösungen.</small></p>
+  </section>
+
+  <footer class="end">
+    <span>Gezeichnet Punkt für Punkt, für genau eine Person.</span>
+    <span class="sig" id="sig">Dein Lukas</span>
+  </footer>
+</div>
+
+<button class="egg-pill" id="pill" type="button" aria-expanded="false" aria-controls="panel"><span class="h">♥</span> <span id="pill-text">0/6 Geheimnisse</span></button>
+<div class="panel" id="panel" hidden>
+  <h4>Versteckte Geheimnisse</h4>
+  <p>Auf dieser Seite ist mehr versteckt, als man sieht. Ein paar Hinweise:</p>
+  <ul id="egg-list"></ul>
+  <button class="letter-btn" id="letter-btn" type="button" hidden>Brief öffnen</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="t-title" id="toast-title"></div>
+  <div class="t-msg" id="toast-msg"></div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="letter" role="dialog" aria-modal="true" aria-label="Ein Brief für dich">
+    <button class="close" id="close-letter" type="button" aria-label="Brief schließen">×</button>
+    <div id="letter-body"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Namen hier anpassen
+  const FUER = "Emma";
+  const VON = "Lukas";
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (id) => document.getElementById(id);
+  const css = getComputedStyle(document.documentElement);
+  const C = {
+    rose: css.getPropertyValue("--rose").trim(),
+    roseSoft: css.getPropertyValue("--rose-soft").trim(),
+    blush: css.getPropertyValue("--blush").trim(),
+    muted: css.getPropertyValue("--muted").trim(),
+    gold: css.getPropertyValue("--gold").trim(),
+    fg: css.getPropertyValue("--fg").trim(),
+  };
+
+  $("sig").textContent = "Dein " + VON;
+  document.querySelectorAll(".name").forEach((n) => (n.textContent = FUER));
+
+  // Begrüßung nach Uhrzeit
+  const h = new Date().getHours();
+  const greet = h >= 5 && h < 11 ? "Guten Morgen" : h < 17 && h >= 11 ? "Hallo" : h >= 17 && h < 23 ? "Guten Abend" : "Schön, dass du noch wach bist";
+  $("greet").textContent = greet + ", " + FUER;
+
+  /* ---------- Mathe ---------- */
+  // Polarform von (x² + y² − 1)³ = k·x²y³: für jeden Winkel gibt es genau einen Radius r > 0.
+  function radius(theta, k) {
+    const c = Math.cos(theta), s = Math.sin(theta);
+    const a = k * c * c * s * s * s;
+    let lo = 0, hi = 3;
+    for (let i = 0; i < 40; i++) {
+      const m = (lo + hi) / 2;
+      const f = Math.pow(m * m - 1, 3) - a * Math.pow(m, 5);
+      if (f < 0) lo = m; else hi = m;
+    }
+    return (lo + hi) / 2;
+  }
+  // Zwei Hälften, beide von der unteren Spitze (0,−1) zur oberen (0,1)
+  function curve(k, n) {
+    const right = [], left = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const tr = -Math.PI / 2 + t * Math.PI;
+      const tl = -Math.PI / 2 - t * Math.PI;
+      const rr = radius(tr, k), rl = radius(tl, k);
+      right.push([rr * Math.cos(tr), rr * Math.sin(tr)]);
+      left.push([rl * Math.cos(tl), rl * Math.sin(tl)]);
+    }
+    return { right, left };
+  }
+  const insideHeart = (x, y) => Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y < 0;
+
+  /* ---------- Plot ---------- */
+  function makePlot(canvas, view) {
+    const ctx = canvas.getContext("2d");
+    const p = { ctx, W: 0, H: 0, view };
+    p.resize = () => {
+      const r = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      p.W = r.width; p.H = r.height;
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    p.sx = (x) => ((x - view.x0) / (view.x1 - view.x0)) * p.W;
+    p.sy = (y) => p.H - ((y - view.y0) / (view.y1 - view.y0)) * p.H;
+    p.toWorld = (px, py) => [view.x0 + (px / p.W) * (view.x1 - view.x0), view.y0 + ((p.H - py) / p.H) * (view.y1 - view.y0)];
+    p.grid = () => {
+      const { W, H } = p;
+      ctx.clearRect(0, 0, W, H);
+      const line = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+      ctx.lineWidth = 1;
+      for (let i = Math.ceil(view.x0 * 10); i <= Math.floor(view.x1 * 10); i++) {
+        ctx.strokeStyle = i % 5 === 0 ? "rgba(245,195,204,0.14)" : "rgba(245,195,204,0.05)";
+        const X = Math.round(p.sx(i / 10)) + 0.5; line(X, 0, X, H);
+      }
+      for (let j = Math.ceil(view.y0 * 10); j <= Math.floor(view.y1 * 10); j++) {
+        ctx.strokeStyle = j % 5 === 0 ? "rgba(245,195,204,0.14)" : "rgba(245,195,204,0.05)";
+        const Y = Math.round(p.sy(j / 10)) + 0.5; line(0, Y, W, Y);
+      }
+      ctx.strokeStyle = "rgba(245,195,204,0.5)";
+      const ox = Math.round(p.sx(0)) + 0.5, oy = Math.round(p.sy(0)) + 0.5;
+      line(0, oy, W, oy); line(ox, 0, ox, H);
+      const fs = Math.max(10, Math.min(13, W / 36));
+      ctx.font = `${fs}px Newsreader, Georgia, serif`;
+      ctx.fillStyle = C.muted;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      for (let v = -1.5; v <= 1.5; v += 0.5) {
+        if (Math.abs(v) < 1e-9 || v < view.x0 + 0.05 || v > view.x1 - 0.05) continue;
+        ctx.fillText(String(v).replace("-", "−"), p.sx(v), oy + 5);
+      }
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (let v = -1; v <= 1.5; v += 0.5) {
+        if (Math.abs(v) < 1e-9 || v < view.y0 + 0.05 || v > view.y1 - 0.05) continue;
+        ctx.fillText(String(v).replace("-", "−"), ox - 6, p.sy(v));
+      }
+      ctx.textBaseline = "top"; ctx.fillText("0", ox - 6, oy + 5);
+    };
+    p.path = (pts, upto, scale, cx, cy) => {
+      ctx.beginPath();
+      for (let i = 0; i <= upto && i < pts.length; i++) {
+        const x = cx + (pts[i][0] - cx) * scale, y = cy + (pts[i][1] - cy) * scale;
+        if (i === 0) ctx.moveTo(p.sx(x), p.sy(y)); else ctx.lineTo(p.sx(x), p.sy(y));
+      }
+    };
+    p.strokeCurve = (cv, upto, scale = 1, cx = 0, cy = 0.15) => {
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      for (const pass of [{ w: 9, c: C.roseSoft }, { w: 2.6, c: C.rose }]) {
+        ctx.lineWidth = pass.w; ctx.strokeStyle = pass.c;
+        p.path(cv.right, upto, scale, cx, cy); ctx.stroke();
+        p.path(cv.left, upto, scale, cx, cy); ctx.stroke();
+      }
+    };
+    p.resize();
+    return p;
+  }
+
+  /* ---------- Hero-Herz ---------- */
+  const N = 360;
+  const heartCurve = curve(1, N);
+  const hero = makePlot($("heart"), { x0: -1.6, x1: 1.6, y0: -1.3, y1: 1.6 });
+  let drawStart = null, drawDone = reduceMotion, textAlpha = reduceMotion ? 1 : 0;
+  let holding = false, holdStart = 0, heroVisible = true, heroRaf = 0, beatClock = 0, lastT = 0;
+
+  function heartbeat(phase) {
+    return Math.exp(-Math.pow((phase - 0.12) / 0.05, 2)) + 0.6 * Math.exp(-Math.pow((phase - 0.32) / 0.06, 2));
+  }
+  function drawHero(now) {
+    const dt = lastT ? (now - lastT) / 1000 : 0; lastT = now;
+    hero.grid();
+    let upto = N, scale = 1;
+    if (!drawDone) {
+      if (drawStart === null) drawStart = now;
+      const t = Math.min(1, (now - drawStart) / 2600);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      upto = Math.floor(e * N);
+      if (t >= 1) drawDone = true;
+    } else {
+      const period = holding ? 0.42 : 1.15;
+      beatClock += dt / period;
+      if (!reduceMotion) scale = 1 + (holding ? 0.05 : 0.022) * heartbeat(beatClock % 1);
+      if (textAlpha < 1) textAlpha = Math.min(1, textAlpha + dt * 1.6);
+    }
+    hero.strokeCurve(heartCurve, upto, scale);
+    if (textAlpha > 0) {
+      const ctx = hero.ctx;
+      ctx.globalAlpha = textAlpha;
+      ctx.fillStyle = C.rose;
+      ctx.font = `700 ${Math.round(hero.W * 0.085)}px Caveat, "Segoe Print", cursive`;
+      ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      ctx.fillText(FUER, hero.sx(0) + 3, hero.sy(0.5));
+      ctx.globalAlpha = 1;
+    }
+    if (holding && now - holdStart > 1500) { holding = false; found("herz"); burstAt($("heart"), 0.5, 0.45, 40); }
+    const animating = !drawDone || textAlpha < 1 || (!reduceMotion && heroVisible);
+    heroRaf = animating ? requestAnimationFrame(drawHero) : 0;
+  }
+  const kickHero = () => { if (!heroRaf) { lastT = 0; heroRaf = requestAnimationFrame(drawHero); } };
+  new IntersectionObserver((es) => { heroVisible = es[0].isIntersecting; if (heroVisible) kickHero(); }).observe($("heart"));
+  kickHero();
+  if (document.fonts && document.fonts.load) document.fonts.load('700 40px Caveat').then(kickHero).catch(() => {});
+
+  $("heart").addEventListener("pointerdown", (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const [x, y] = hero.toWorld(e.clientX - r.left, e.clientY - r.top);
+    if (insideHeart(x, y)) { holding = true; holdStart = performance.now(); kickHero(); }
+    spawnHearts(e.clientX, e.clientY, insideHeart(x, y) ? 6 : 3);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => $("heart").addEventListener(ev, () => (holding = false)));
+  $("heart").addEventListener("contextmenu", (e) => e.preventDefault());
+
+  /* ---------- Regler ---------- */
+  const morph = makePlot($("morph"), { x0: -1.6, x1: 1.6, y0: -1.3, y1: 1.7 });
+  const kInput = $("k");
+  function caption(k) {
+    if (k < 0.05) return "Ein Kreis. Ordentlich, rund, ein bisschen langweilig. So war es vor dir.";
+    if (k < 0.6) return "Irgendwas verändert sich …";
+    if (k < 0.95) return "Fast …";
+    if (k <= 1.05) return "k = 1. Da ist es. Unsere Gleichung.";
+    if (k < 2.98) return "Und es wird immer mehr.";
+    return "Ende der Skala. Meine Gefühle gehen weiter, der Regler leider nicht.";
+  }
+  function drawMorph() {
+    const k = parseFloat(kInput.value);
+    morph.grid();
+    morph.strokeCurve(curve(k, 180), 180);
+    $("kval").textContent = k.toFixed(2);
+    $("caption").textContent = caption(k);
+    if (k >= 2.98) found("skala");
+  }
+  kInput.addEventListener("input", drawMorph);
+  drawMorph();
+
+  window.addEventListener("resize", () => { hero.resize(); morph.resize(); drawMorph(); kickHero(); sizeFx(); sizeSky(); });
+
+  /* ---------- Sätze ---------- */
+  const theorems = [
+    ["Satz vom Lächeln", "Jeder Tag mit dir enthält mindestens ein Lächeln.", "Durch Beobachtung, täglich. Gegenbeispiele sind bis heute keine bekannt."],
+    ["Satz von der Zeit", "Zeit mit dir ist immer zu kurz.", "Für jede Zeitspanne t mit dir gilt: Ich hätte gern t + 1."],
+    ["Grenzwertsatz", "lim (Abstand → 0) Glück = ∞", "Experimentell bestätigt. Bei jeder einzelnen Umarmung."],
+    ["Satz von der Symmetrie", "Ohne dich wäre das Herz schief.", "Dein Name beginnt genau auf der Symmetrieachse x = 0. Nachrechnen erlaubt."],
+    ["Eindeutigkeitssatz", "Es gibt genau eine " + FUER + ".", "Existenz: offensichtlich. Eindeutigkeit: Ich habe dich gefunden und muss nicht weitersuchen."],
+    ["Monotoniesatz", "Meine Liebe zu dir ist monoton wachsend.", "Induktion: Liebe(n + 1) ≥ Liebe(n) für jeden Tag n. Anfang: der Tag, an dem wir uns kennengelernt haben."],
+  ];
+  const grid = $("theorems");
+  theorems.forEach(([title, claim, proof], i) => {
+    const b = document.createElement("button");
+    b.className = "card"; b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.innerHTML = `<div class="card-inner">
+      <div class="face front"><span class="tag">Satz ${i + 1}</span><h3></h3><p class="claim"></p><span class="flip">Beweis zeigen →</span></div>
+      <div class="face back"><span class="tag">Beweis</span><p class="proof"></p><span class="qed">∎</span></div></div>`;
+    b.querySelector("h3").textContent = title;
+    b.querySelector(".claim").textContent = claim;
+    b.querySelector(".proof").textContent = proof;
+    b.addEventListener("click", () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"));
+    grid.appendChild(b);
+  });
+
+  /* ---------- Bonusaufgabe ---------- */
+  const area = $("answer-area"), no = $("no"), yes = $("yes");
+  let flee = 0, converted = false, answered = false;
+  function runAway() {
+    if (converted) return;
+    flee++;
+    if (flee >= 5) {
+      converted = true;
+      no.textContent = "Na gut … Ja";
+      no.classList.add("converted");
+      found("nein");
+      return;
+    }
+    const w = area.clientWidth, hgt = area.clientHeight;
+    const bw = no.offsetWidth, bh = no.offsetHeight;
+    let x, y, tries = 0;
+    do {
+      x = bw / 2 + Math.random() * (w - bw);
+      y = bh / 2 + Math.random() * (hgt - bh);
+      tries++;
+    } while (tries < 20 && Math.abs(x - yes.offsetLeft) < bw && Math.abs(y - yes.offsetTop) < bh * 1.5);
+    no.style.left = x + "px"; no.style.top = y + "px";
+    const lines = ["Nein", "Sicher?", "Wirklich?", "Letzte Chance"];
+    no.textContent = lines[Math.min(flee, lines.length - 1)];
+  }
+  no.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") runAway(); });
+  no.addEventListener("pointerdown", (e) => { if (!converted && e.pointerType !== "mouse") { e.preventDefault(); runAway(); } });
+  no.addEventListener("click", () => { if (converted) sayYes(no); else runAway(); });
+  yes.addEventListener("click", () => sayYes(yes));
+  function sayYes(btn) {
+    if (answered) return;
+    answered = true;
+    const r = btn.getBoundingClientRect();
+    burst(r.left + r.width / 2, r.top + r.height / 2, 70);
+    setTimeout(() => rain(60, "heart"), 300);
+    area.hidden = true;
+    $("answer-result").hidden = false;
+  }
+
+  /* ---------- Weitere Geheimnisse ---------- */
+  $("three").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    if (b.classList.contains("revealed")) return;
+    b.textContent = "<3"; b.classList.add("revealed");
+    const r = b.getBoundingClientRect(); spawnHearts(r.left + r.width / 2, r.top, 10);
+    found("drei");
+  });
+  $("moon").addEventListener("click", (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    spawnHearts(r.left + r.width / 2, r.top + r.height / 2, 12);
+    found("mond");
+  });
+  let nameTaps = 0;
+  $("name").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    b.classList.add("bounce"); setTimeout(() => b.classList.remove("bounce"), 220);
+    nameTaps++;
+    if (nameTaps >= 5) { nameTaps = 0; nameMagic(); }
+  });
+  let typed = "";
+  window.addEventListener("keydown", (e) => {
+    if (e.key.length !== 1 || e.target.tagName === "INPUT") return;
+    typed = (typed + e.key.toLowerCase()).slice(-24);
+    if (typed.endsWith(FUER.toLowerCase())) { typed = ""; nameMagic(); }
+    if (typed.endsWith("ich liebe dich")) { typed = ""; rain(80, "heart"); toast("Psst", "Ich dich auch. Viel mehr."); }
+  });
+  function nameMagic() { rain(46, "text"); found("name"); }
+
+  /* ---------- Geheimnis-Verwaltung ---------- */
+  const EGGS = [
+    { id: "herz", hint: "Halt mein Herz fest. Ein bisschen länger.", title: "Herzklopfen", msg: "Spürst du das? So schnell schlägt es, wenn du da bist." },
+    { id: "drei", hint: "In der Formel steckt etwas. Schau dir die Hochzahlen an.", title: "<3", msg: "Die Formel hat es die ganze Zeit gesagt: <3" },
+    { id: "mond", hint: "Bis zum Mond und …", title: "Bis zum Mond", msg: "384.400 km bis zum Mond, mal zwei für den Rückweg: 768.800 km. Mindestens so sehr." },
+    { id: "skala", hint: "Manche Regler wollen bis zum Anschlag.", title: "Außerhalb der Skala", msg: "k = 3 ist nur das Ende vom Regler. Bei mir hört es da nicht auf." },
+    { id: "nein", hint: "Versuch mal, Nein zu sagen.", title: "Keine Lösung", msg: "„Nein“ ist keine Lösung dieser Gleichung. Habe ich nachgerechnet." },
+    { id: "name", hint: "Mein Lieblingsname. Fünfmal antippen oder eintippen.", title: "Lieblingsname", msg: "Der schönste Name, den ich kenne. Ich könnte ihn den ganzen Tag schreiben." },
+  ];
+  const KEY = "emma-geheimnisse-v1";
+  let got = new Set();
+  try { got = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (_) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify([...got])); } catch (_) {} }
+
+  function renderEggs() {
+    const list = $("egg-list"); list.innerHTML = "";
+    EGGS.forEach((g) => {
+      const li = document.createElement("li");
+      const has = got.has(g.id);
+      li.className = has ? "found" : "";
+      li.innerHTML = `<span class="mark">${has ? "♥" : "○"}</span><span></span>`;
+      li.lastChild.textContent = has ? g.title : g.hint;
+      list.appendChild(li);
+    });
+    const n = [...got].filter((id) => EGGS.some((g) => g.id === id)).length;
+    const done = n === EGGS.length;
+    $("pill-text").textContent = done ? "Ein Brief für dich" : `${n}/${EGGS.length} Geheimnisse`;
+    $("pill").classList.toggle("done", done);
+    $("letter-btn").hidden = !done;
+    return done;
+  }
+  function found(id) {
+    if (got.has(id)) return;
+    got.add(id); save();
+    const g = EGGS.find((e) => e.id === id);
+    const done = renderEggs();
+    toast(`Geheimnis ${got.size}/${EGGS.length} · ${g.title}`, g.msg);
+    const pill = $("pill"); pill.classList.add("ping"); setTimeout(() => pill.classList.remove("ping"), 300);
+    if (done) setTimeout(() => { toast("Alles gefunden", "Da wartet noch ein Brief auf dich. Tipp unten rechts."); rain(50, "heart"); }, 6200);
+  }
+  renderEggs();
+
+  $("pill").addEventListener("click", () => {
+    if ($("pill").classList.contains("done")) { openLetter(); return; }
+    const p = $("panel"); p.hidden = !p.hidden;
+    $("pill").setAttribute("aria-expanded", String(!p.hidden));
+  });
+  document.addEventListener("pointerdown", (e) => {
+    const p = $("panel");
+    if (!p.hidden && !p.contains(e.target) && !$("pill").contains(e.target)) { p.hidden = true; $("pill").setAttribute("aria-expanded", "false"); }
+  });
+  $("letter-btn").addEventListener("click", openLetter);
+
+  let toastTimer = 0;
+  function toast(title, msg) {
+    $("toast-title").textContent = title; $("toast-msg").textContent = msg;
+    const t = $("toast"); t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 6000);
+  }
+  $("toast").addEventListener("click", () => $("toast").classList.remove("show"));
+
+  const LETTER = [
+    `Liebe ${FUER},`,
+    "du hast alle Geheimnisse gefunden. Natürlich hast du das. Du merkst ja auch immer, was in mir vorgeht, bevor ich es selbst weiß.",
+    "Die meisten Gleichungen haben langweilige Lösungen: eine Zahl, eine Gerade, vielleicht einen Kreis. Und dann gibt es diese eine, und plötzlich ist da ein Herz. Genau so fühlt es sich an, seit es dich in meinem Leben gibt.",
+    "Danke, dass du du bist.",
+    `Dein ${VON}`,
+  ];
+  function openLetter() {
+    const body = $("letter-body"); body.innerHTML = "";
+    LETTER.forEach((t) => { const p = document.createElement("p"); p.textContent = t; body.appendChild(p); });
+    $("panel").hidden = true;
+    $("overlay").hidden = false;
+    $("close-letter").focus();
+    rain(40, "heart");
+  }
+  $("close-letter").addEventListener("click", () => ($("overlay").hidden = true));
+  $("overlay").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("overlay").hidden = true; $("panel").hidden = true; } });
+
+  /* ---------- Partikel ---------- */
+  const fx = $("fx"), fctx = fx.getContext("2d");
+  let FW = 0, FH = 0, parts = [], fxRaf = 0;
+  function sizeFx() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    FW = window.innerWidth; FH = window.innerHeight;
+    fx.width = FW * dpr; fx.height = FH * dpr; fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  sizeFx();
+  // Die Partikel haben die Form derselben Kurve
+  const heartPath = (() => {
+    const cv = curve(1, 40), path = new Path2D();
+    const pts = cv.right.concat(cv.left.slice().reverse());
+    pts.forEach(([x, y], i) => (i ? path.lineTo(x, -y + 0.15) : path.moveTo(x, -y + 0.15)));
+    path.closePath();
+    return path;
+  })();
+  const palette = [C.rose, C.blush, C.gold, "#ff8fa0"];
+  function add(p) { parts.push(p); if (!fxRaf) fxRaf = requestAnimationFrame(stepFx); }
+  function spawnHearts(x, y, n) {
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, s = 1.5 + Math.random() * 3;
+      add({ kind: "heart", x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, g: 0.04, size: 6 + Math.random() * 8, rot: (Math.random() - 0.5) * 0.6, vr: (Math.random() - 0.5) * 0.05, life: 1, decay: 0.012 + Math.random() * 0.01, color: palette[i % palette.length] });
+    }
+  }
+  function burst(x, y, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 7;
+      add({ kind: "heart", x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, g: 0.12, size: 7 + Math.random() * 12, rot: 0, vr: (Math.random() - 0.5) * 0.12, life: 1, decay: 0.008 + Math.random() * 0.008, color: palette[i % palette.length] });
+    }
+  }
+  function burstAt(el, fxp, fyp, n) { const r = el.getBoundingClientRect(); burst(r.left + r.width * fxp, r.top + r.height * fyp, n); }
+  function rain(n, kind) {
+    if (reduceMotion) n = Math.min(n, 12);
+    for (let i = 0; i < n; i++) {
+      setTimeout(() => add({
+        kind, text: FUER, x: Math.random() * FW, y: -30, vx: (Math.random() - 0.5) * 0.8, vy: 1.5 + Math.random() * 2.5, g: 0.015,
+        size: kind === "text" ? 18 + Math.random() * 18 : 8 + Math.random() * 14, rot: (Math.random() - 0.5) * 0.8, vr: (Math.random() - 0.5) * 0.03,
+        life: 1, decay: 0.002, color: palette[i % palette.length],
+      }), i * (2400 / n));
+    }
+  }
+  function stepFx() {
+    fctx.clearRect(0, 0, FW, FH);
+    parts = parts.filter((p) => p.life > 0 && p.y < FH + 60);
+    for (const p of parts) {
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= p.decay;
+      fctx.save();
+      fctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
+      fctx.translate(p.x, p.y); fctx.rotate(p.rot);
+      fctx.fillStyle = p.color;
+      if (p.kind === "text") {
+        fctx.font = `700 ${p.size}px Caveat, cursive`; fctx.textAlign = "center"; fctx.fillText(p.text, 0, 0);
+      } else {
+        fctx.scale(p.size / 1.2, p.size / 1.2); fctx.fill(heartPath);
+      }
+      fctx.restore();
+    }
+    fxRaf = parts.length ? requestAnimationFrame(stepFx) : 0;
+    if (!fxRaf) fctx.clearRect(0, 0, FW, FH);
+  }
+
+  /* ---------- Sternenhimmel ---------- */
+  const sky = $("sky"), sctx = sky.getContext("2d");
+  let stars = [], SW = 0, SH = 0;
+  function sizeSky() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    SW = window.innerWidth; SH = window.innerHeight;
+    sky.width = SW * dpr; sky.height = SH * dpr; sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const count = Math.round((SW * SH) / 9000);
+    stars = Array.from({ length: count }, () => ({ x: Math.random() * SW, y: Math.random() * SH, r: Math.random() * 1.2 + 0.2, p: Math.random() * Math.PI * 2, s: 0.5 + Math.random() * 1.5 }));
+    if (reduceMotion) drawSky(0);
+  }
+  function drawSky(t) {
+    sctx.clearRect(0, 0, SW, SH);
+    for (const s of stars) {
+      sctx.globalAlpha = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(s.p + t * 0.001 * s.s));
+      sctx.fillStyle = "#fff4e8";
+      sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); sctx.fill();
+    }
+    sctx.globalAlpha = 1;
+  }
+  sizeSky();
+  if (!reduceMotion) {
+    let last = 0;
+    const loop = (t) => { if (t - last > 50) { drawSky(t); last = t; } requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- Für Neugierige ---------- */
+  console.log(
+    "%c♥ Hallo " + FUER + "! %c\nDu schaust dir den Code an? Natürlich tust du das.\nTipp: Schreib einfach mal „ich liebe dich“ auf der Tastatur.",
+    "color:#ef4f62;font-size:22px;font-weight:bold", "color:#bfa3b2;font-size:13px"
+  );
+})();
+</script>
+
+</html>
